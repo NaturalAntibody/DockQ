@@ -1,11 +1,4 @@
 #!/usr/bin/env python
-
-import warnings
-
-import Bio.PDB
-from Bio import BiopythonWarning
-
-warnings.simplefilter('ignore', BiopythonWarning)
 import sys
 import os
 import re
@@ -14,6 +7,12 @@ import numpy as np
 from Bio.SVDSuperimposer import SVDSuperimposer
 from argparse import ArgumentParser
 import itertools
+import warnings
+
+import Bio.PDB
+from Bio import BiopythonWarning
+
+warnings.simplefilter('ignore', BiopythonWarning)
 
 
 def parse_fnat(fnat_out):
@@ -28,17 +27,17 @@ def parse_fnat(fnat_out):
         #        print line
         line = line.rstrip('\n')
         match = re.search(r'NATIVE: (\d+)(\w) (\d+)(\w)', line)
-        if (re.search(r'^Fnat', line)):
+        if re.search(r'^Fnat', line):
             list = line.split(' ')
             fnat = float(list[3])
             nat_correct = int(list[1])
             nat_total = int(list[2])
-        elif (re.search(r'^Fnonnat', line)):
+        elif re.search(r'^Fnonnat', line):
             list = line.split(' ')
             fnonnat = float(list[3])
             nonnat_count = int(list[1])
             model_total = int(list[2])
-        elif (match):
+        elif match:
             # print line
             res1 = match.group(1)
             chain1 = match.group(2)
@@ -47,7 +46,7 @@ def parse_fnat(fnat_out):
             # print res1 + ' ' + chain1 + ' ' + res2 + ' ' + chain2
             inter.append(res1 + chain1)
             inter.append(res2 + chain2)
-    return (fnat, nat_correct, nat_total, fnonnat, nonnat_count, model_total, inter)
+    return fnat, nat_correct, nat_total, fnonnat, nonnat_count, model_total, inter
 
 
 def capri_class(fnat, iRMS, LRMS, capri_peptide=False):
@@ -220,7 +219,7 @@ def collect_chain_sample(sample_model, atom_for_sup, common_residues, atoms_def_
     return chain_sample
 
 
-def calc_DockQ(model, native, use_CA_only=False, capri_peptide=False):
+def calc_DockQ(model:str, native:str, use_CA_only=False, capri_peptide=False):
     exec_path = os.path.dirname(os.path.abspath(__file__))
     atom_for_sup = ['CA', 'C', 'N', 'O']
     if use_CA_only:
@@ -236,11 +235,12 @@ def calc_DockQ(model, native, use_CA_only=False, capri_peptide=False):
     fnat_out = os.popen(cmd_fnat).read()
 
     (fnat, nat_correct, nat_total, fnonnat, nonnat_count, model_total, interface5A) = parse_fnat(fnat_out)
-    assert fnat != -1, "Error running cmd: %s\n" % (cmd_fnat)
+    assert fnat != -1, f"Error running cmd: {cmd_fnat}\n"
     inter_out = os.popen(cmd_interface).read()
 
+    print(cmd_interface)
     (fnat_bb, nat_correct_bb, nat_total_bb, fnonnat_bb, nonnat_count_bb, model_total_bb, interface) = parse_fnat(inter_out)
-    assert fnat_bb != -1, "Error running cmd: %s\n" % (cmd_interface)
+    assert fnat_bb != -1, f"Error running cmd: {cmd_interface}\n"
 
     pdb_parser = Bio.PDB.PDBParser(QUIET=True)
     ref_structure = pdb_parser.get_structure("reference", native)
@@ -278,6 +278,7 @@ def calc_DockQ(model, native, use_CA_only=False, capri_peptide=False):
 
     ligand_chain = chain1
     receptor_chain = chain2
+
     len1 = len(chain_res[chain1])
     len2 = len(chain_res[chain2])
 
@@ -302,7 +303,6 @@ def calc_DockQ(model, native, use_CA_only=False, capri_peptide=False):
     receptor_chain_rms = super_imposer.rms
 
     # Grep out the transformed ligand coords
-
     assert len(chain_ref[ligand_chain]) != 0 or len(chain_sample[
                                                         ligand_chain]) != 0, "Zero number of equivalent atoms in native and model ligand (chain %s) %d %d.\nCheck that the residue numbers in model and native is consistent\n" % (
         ligand_chain, len(chain_ref[ligand_chain]), len(chain_sample[ligand_chain]))

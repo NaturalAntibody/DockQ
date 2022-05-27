@@ -1,9 +1,6 @@
 from pathlib import Path
-
-import pandas as pd
-from pandas._testing import assert_frame_equal
-
 import DockQ
+from fnat import calc_fnat
 
 TEST_DATA_DIR = Path(__file__).parent / 'data'
 
@@ -27,3 +24,12 @@ def test_calculate_dockq_score():
                            'len2': 228,
                            'class1': 'receptor',
                            'class2': 'ligand'}
+
+
+def test_calc_fnat():
+    model = str(TEST_DATA_DIR / 'model.pdb')
+    native = str(TEST_DATA_DIR / 'native.pdb')
+
+    # when
+    fnat = calc_fnat(model=model, native=native)
+    # then
